@@ -26,10 +26,14 @@ alter table public.site_settings enable row level security;
 insert into public.site_settings(key, value) values ('owner_email', 'story280@nyschool.co.kr')
   on conflict (key) do update set value = excluded.value;
 
-create or replace function public.is_site_owner() returns boolean
+create schema if not exists private;
+create or replace function private.is_site_owner() returns boolean
 language sql stable security definer set search_path = public as $$
   select coalesce((auth.jwt() ->> 'email') = (select value from public.site_settings where key = 'owner_email'), false)
 $$;
+revoke all on function private.is_site_owner() from public;
+grant usage on schema private to anon, authenticated;
+grant execute on function private.is_site_owner() to anon, authenticated;
 
 alter table public.docs enable row level security;
 
@@ -46,7 +50,7 @@ create policy docs_insert on public.docs for insert with check (
   auth.uid() is not null and owner = auth.uid() and (
     (coll in ('teachers','pub','approvals','ratings') and doc_id = auth.uid()::text and path = coll || '/' || doc_id)
     or (coll = 'data/users/' || auth.uid()::text and path = coll || '/' || doc_id)
-    or (coll = 'config' and public.is_site_owner() and path = coll || '/' || doc_id)
+    or (coll = 'config' and private.is_site_owner() and path = coll || '/' || doc_id)
   )
 );
 
@@ -55,13 +59,13 @@ create policy docs_update on public.docs for update using (
   auth.uid() is not null and owner = auth.uid() and (
     (coll in ('teachers','pub','approvals','ratings') and doc_id = auth.uid()::text)
     or coll = 'data/users/' || auth.uid()::text
-    or (coll = 'config' and public.is_site_owner())
+    or (coll = 'config' and private.is_site_owner())
   )
 ) with check (
   owner = auth.uid() and (
     (coll in ('teachers','pub','approvals','ratings') and doc_id = auth.uid()::text and path = coll || '/' || doc_id)
     or (coll = 'data/users/' || auth.uid()::text and path = coll || '/' || doc_id)
-    or (coll = 'config' and public.is_site_owner() and path = coll || '/' || doc_id)
+    or (coll = 'config' and private.is_site_owner() and path = coll || '/' || doc_id)
   )
 );
 
@@ -70,15 +74,15 @@ create policy docs_delete on public.docs for delete using (
   auth.uid() is not null and owner = auth.uid() and (
     (coll in ('teachers','pub','approvals','ratings') and doc_id = auth.uid()::text)
     or coll = 'data/users/' || auth.uid()::text
-    or (coll = 'config' and public.is_site_owner())
+    or (coll = 'config' and private.is_site_owner())
   )
 );
 
 -- config 문서는 최고관리자가 처음 만들면 owner가 최고관리자로 고정돼요.
 -- 최고관리자가 바뀌어도 이어서 쓸 수 있게, config는 최고관리자면 owner와 상관없이 수정 허용
 drop policy if exists docs_update_config on public.docs;
-create policy docs_update_config on public.docs for update using (coll = 'config' and public.is_site_owner())
-  with check (coll = 'config' and public.is_site_owner() and owner = auth.uid());
+create policy docs_update_config on public.docs for update using (coll = 'config' and private.is_site_owner())
+  with check (coll = 'config' and private.is_site_owner() and owner = auth.uid());
 
 -- 실시간 반영
 do $$ begin
