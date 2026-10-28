@@ -12,7 +12,7 @@
 | `SUPABASE_URL` | Supabase Project URL |
 | `SUPABASE_ANON_KEY` | Supabase anon public 키 |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service_role 키 (비밀, Vercel에만 저장) |
-| `OWNER_EMAIL` | 최고관리자 로그인 이메일 |
+| `OWNER_EMAIL` | (안 씀) 최고관리자 이메일은 Supabase site_settings에서만 관리 |
 | `CRON_SECRET` | 자동 업데이트 보호용 임의 문자열 |
 | `NEIS_KEY` | (선택) 나이스 인증키 — 넣으면 6·7교시까지 전부 받음 |
 

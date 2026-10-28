@@ -4,7 +4,7 @@ module.exports = (req, res) => {
   res.setHeader("cache-control", "public, max-age=60");
   res.end(JSON.stringify({
     url: process.env.SUPABASE_URL || "",
-    anon: process.env.SUPABASE_ANON_KEY || "",
-    ownerEmail: process.env.OWNER_EMAIL || ""
+    anon: process.env.SUPABASE_ANON_KEY || ""
+    // 최고관리자 이메일은 내려주지 않아요. 본인 여부는 로그인 후 서버(am_i_owner)에서만 확인해요.
   }));
 };

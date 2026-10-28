@@ -106,3 +106,9 @@ create policy files_delete on storage.objects for delete to authenticated
 drop policy if exists files_list_own on storage.objects;
 create policy files_list_own on storage.objects for select to authenticated
   using (bucket_id = 'files' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- 로그인한 사람이 최고관리자인지 본인만 확인 (이메일은 밖으로 내보내지 않음)
+create or replace function public.am_i_owner() returns boolean
+language sql stable security invoker set search_path = '' as $$ select private.is_site_owner() $$;
+revoke all on function public.am_i_owner() from public, anon;
+grant execute on function public.am_i_owner() to authenticated;

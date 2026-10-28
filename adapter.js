@@ -4,7 +4,7 @@
 (function(){
   "use strict";
   window.__BORAM_VERCEL = true;
-  let sb = null, cfg = null, session = null, readyP = null;
+  let sb = null, cfg = null, session = null, readyP = null, ownerP = null;
   const LS = { get(k){ try{ return localStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch{} }, del(k){ try{ localStorage.removeItem(k); }catch{} } };
 
   async function init(){
@@ -106,7 +106,12 @@
   const user = {
     async id(){ return uid(); },
     async me(){ const u = session?.user; return { id: uid(), name: "", email: u?.email || null, avatarUrl: "", color: "#0a7fc2", isOwner: await user.isOwner(), canEdit: false }; },
-    async isOwner(){ const e = session?.user?.email; return !!(e && cfg?.ownerEmail && e.toLowerCase() === cfg.ownerEmail.toLowerCase()); },
+    async isOwner(){
+      if (!uid()) return false;
+      if (ownerP) return ownerP;
+      ownerP = sb.rpc("am_i_owner").then(({ data, error }) => !error && data === true, () => false);
+      return ownerP;
+    },
     async canEdit(){ return false; },
     async can(){ return null; },
     async profiles(ids){ const o = {}; (Array.isArray(ids) ? ids : [ids]).forEach(i => o[i] = { id: i, name: "", avatarUrl: "", color: "#0a7fc2", email: null, isMe: i === uid(), guest: false }); return o; },
