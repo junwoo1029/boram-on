@@ -467,6 +467,22 @@ svg.i{width:1.15em;height:1.15em;flex:none}
 .hlinks a{flex:none;display:flex;align-items:center;gap:8px;padding:.5rem .85rem;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-decoration:none;font-weight:700;font-size:.84rem;white-space:nowrap}
 .hlinks a i{width:8px;height:8px;border-radius:50%;background:var(--cc)}
 .hlinks a em{font-style:normal;font-size:.7rem;color:var(--ink-orange);background:var(--tint-orange);border-radius:999px;padding:.05rem .4rem}
+/* 수강신청·방과후 고정 버튼 */
+.big2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.big2{width:100%;min-width:0}#homeBig2{width:100%;min-width:0;margin-bottom:10px}.bigw{min-width:0}.bigl .go .w{display:inline}
+@media (max-width:640px){.big2{grid-template-columns:1fr;gap:10px}.bigl{padding:12px 14px;gap:10px}.bigl .ic{width:38px;height:38px}.bigl .go .w{display:none}.bigl .go{padding:.3rem .55rem}.loginBtn.in .tx{display:none}.loginBtn.in{padding-right:8px}}
+.bigl{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:8px;background:linear-gradient(135deg,var(--cc),color-mix(in srgb,var(--cc) 70%,#000));color:#fff;text-decoration:none;min-width:0;box-shadow:0 10px 24px -16px var(--cc);transition:transform .12s}
+a.bigl:hover{transform:translateY(-2px)}
+.bigl .ic{flex:none;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center}
+.bigl .ic svg{width:24px;height:24px}
+.bigl .tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.bigl .tx b{font-size:1.05rem}
+.bigl .tx span{font-size:.78rem;opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bigl .go{flex:none;font-weight:800;font-size:.8rem;background:rgba(255,255,255,.2);border-radius:999px;padding:.3rem .7rem;white-space:nowrap}
+.bigl.off{background:var(--surface-2);color:var(--muted);border:1px dashed var(--line);box-shadow:none}
+.bigl.off .ic{background:var(--line)}
+.bigw{display:flex;flex-direction:column;gap:6px}
+.bigw .btn{align-self:flex-start}
 /* 내 학년 칩 */
 .gchip{align-self:center;flex:none;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:999px;padding:.38rem .75rem;font-weight:800;font-size:.8rem;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .gchip i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
@@ -850,7 +866,7 @@ svg.i{width:1.15em;height:1.15em;flex:none}
 
           <div class="card navy" id="homeLinksCard">
             <div class="card-h"><h2>신청·바로가기</h2><a class="lnk" href="#links">전체 보기</a></div>
-            <div class="card-b"><div class="hlinks" id="homeLinks"></div></div>
+            <div class="card-b"><div id="homeBig2"></div><div class="hlinks" id="homeLinks"></div></div>
           </div>
           <div class="card gold">
             <div class="card-h"><h2>다가오는 날</h2><a class="chipbtn" href="#calendar">캘린더 보기</a></div>
@@ -2353,14 +2369,24 @@ function linkTile(l){ const cat=LINK_CATS.find(c=>c.k===l.cat)||LINK_CATS[2], to
     ${!l.base?`<span>${l.grade&&l.grade!=="all"?`<span class="gb">${esc(l.grade)}학년 · </span>`:""}${esc(teacherName(l.teacherId)||"선생님")} 등록${l.until?` · ${fmtDate(l.until)}까지`:""}</span>`:""}</a>
     ${l.until?`<span class="dd ${!old&&n<=3?"soon":""}">${old?"마감":n===0?"오늘 마감":"D-"+n}</span>`:""}
     ${mine?`<div class="lk-acts"><button class="btn" type="button" data-lked="${esc(l._lid)}">수정</button><button class="btn danger" type="button" data-lkdel="${esc(l._lid)}">삭제</button></div>`:""}</div>`; }
+function bigLink(cat){ const today=ymd(new Date());
+  return (S.links||[]).filter(l=>l.cat===cat&&!(l.until&&l.until<today)&&(!viewGrade()||!l.grade||l.grade==="all"||l.grade===viewGrade()))
+    .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0]||null; }
+function big2Html(withEdit){
+  return `<div class="big2">${[["course","수강신청","i-pen"],["after","방과후 신청","i-flag"]].map(([k,t,ic])=>{ const c=LINK_CATS.find(x=>x.k===k), l=bigLink(k), n=l&&l.until?daysUntil(l.until):null;
+    const inner=`<span class="ic"><svg><use href="#${ic}"/></svg></span><span class="tx"><b>${t}</b><span>${l?esc(l.title)+(l.until?` · ${fmtDate(l.until)}까지`:""):"아직 신청 링크가 없어요"}</span></span>${l?`<span class="go">${n!=null?(n===0?"오늘 마감":"D-"+n+" · "):""}<span class="w">바로가기 </span>↗</span>`:""}`;
+    const box=l?`<a class="bigl" style="--cc:${c.c}" href="${esc(safeUrl(l.url))}" target="_blank" rel="noopener noreferrer">${inner}</a>`:`<div class="bigl off" style="--cc:${c.c}">${inner}</div>`;
+    const can=withEdit&&S.teacherOn&&!S.demo, mine=l&&l.teacherId===S.uid;
+    return `<div class="bigw">${box}${can?`<button class="btn" type="button" data-bigset="${k}" ${mine?`data-bigid="${esc(l._lid)}"`:""}>${mine?"링크 바꾸기":"링크 넣기"}</button>`:""}</div>`; }).join("")}</div>`; }
+function wireBig2(box){ box.querySelectorAll("[data-bigset]").forEach(b=>b.onclick=()=>{ const cur=b.dataset.bigid&&(S.pubs[S.uid]?.links||[]).find(x=>x.id===b.dataset.bigid); openLinkEditor(cur||{cat:b.dataset.bigset,grade:"all",title:b.dataset.bigset==="course"?"수강신청":"방과후학교 신청"}); }); }
 function renderLinks(){
   const box=$("#linksBody"); if(!box) return; const L=allLinks(), today=ymd(new Date()), vg=viewGrade();
   const sorted=list=>list.sort((a,b)=>(a.base?1:0)-(b.base?1:0)||((a.until&&a.until<today)?1:0)-((b.until&&b.until<today)?1:0)||String(a.until||"9999").localeCompare(String(b.until||"9999")));
   box.innerHTML=`<div class="card navy"><div class="card-h"><h2>신청·바로가기</h2>${S.teacherOn&&!S.demo?`<button class="btn go" type="button" id="lkAdd" style="margin-left:auto"><svg class="i"><use href="#i-plus"/></svg>링크 올리기</button>`:""}<span class="hint">수강신청·방과후·각종 신청 주소를 한곳에 모았어요.${vg?` 지금은 ${vg}학년 대상만 보여요.`:""} 링크는 새 창으로 열려요.</span></div>
-    <div class="card-b">${LINK_CATS.map(c=>{ const items=sorted(L.filter(l=>l.cat===c.k));
-      return `<section class="lk-sec" style="--cc:${c.c}"><h3><i></i>${c.l}<small>${c.d}</small></h3>${items.length?`<div class="lk-grid">${items.map(linkTile).join("")}</div>`:`<div class="lk-empty">아직 올라온 ${c.l} 링크가 없어요. 학교에서 안내가 나오면 선생님이 여기에 올려요.</div>`}</section>`; }).join("")}
+    <div class="card-b">${big2Html(true)}<div style="height:6px"></div>${LINK_CATS.map(c=>{ const items=sorted(L.filter(l=>l.cat===c.k));
+      return `<section class="lk-sec" style="--cc:${c.c}"><h3><i></i>${c.l}<small>${c.d}</small></h3>${items.length?`<div class="lk-grid">${items.map(linkTile).join("")}</div>`:`<div class="lk-empty">${c.k==="course"||c.k==="after"?`위의 ‘${c.l}’ 버튼에 링크가 들어가면 여기에도 보여요.`:`아직 올라온 ${c.l} 링크가 없어요. 학교에서 안내가 나오면 선생님이 여기에 올려요.`}</div>`}</section>`; }).join("")}
     <div class="srcnote">선생님이 올린 링크는 관리자 승인을 받은 선생님 것만 보여요. 학생은 링크를 올릴 수 없어요.</div></div></div>`;
-  box.querySelector("#lkAdd")?.addEventListener("click",()=>openLinkEditor());
+  box.querySelector("#lkAdd")?.addEventListener("click",()=>openLinkEditor()); wireBig2(box);
   box.querySelectorAll("[data-lked]").forEach(b=>b.onclick=()=>openLinkEditor((S.pubs[S.uid]?.links||[]).find(x=>x.id===b.dataset.lked)));
   box.querySelectorAll("[data-lkdel]").forEach(b=>b.onclick=()=>{ const l=(S.pubs[S.uid]?.links||[]).find(x=>x.id===b.dataset.lkdel); if(!l) return;
     openModal("링크 삭제",`<p style="margin:0">‘${esc(l.title)}’ 링크를 지울까요?</p><div class="frow" style="justify-content:flex-end"><button class="btn" data-x>취소</button><button class="btn danger" id="lkDelGo">삭제</button></div>`,(body,close)=>{
@@ -2368,6 +2394,7 @@ function renderLinks(){
       body.querySelector("#lkDelGo").onclick=async()=>{ try{ await savePub(d=>{ d.links=d.links.filter(x=>x.id!==l.id); }); close(); toast("링크를 지웠어요"); }catch{ toast("지우지 못했어요. 다시 시도해 주세요"); } }; }); });
 }
 function renderHomeLinks(){
+  const hb=$("#homeBig2"); if(hb){ hb.innerHTML=big2Html(true); wireBig2(hb); }
   const box=$("#homeLinks"); if(!box) return; const today=ymd(new Date());
   const L=allLinks().filter(l=>!(l.until&&l.until<today)).sort((a,b)=>(a.base?1:0)-(b.base?1:0)||String(a.until||"9999").localeCompare(String(b.until||"9999"))).slice(0,8);
   box.innerHTML=L.map(l=>{ const c=LINK_CATS.find(x=>x.k===l.cat)||LINK_CATS[2]; const n=l.until?daysUntil(l.until):null;
@@ -2375,7 +2402,7 @@ function renderHomeLinks(){
   const nb=$("#navLinks"); if(nb){ const k=(S.links||[]).filter(l=>l.until&&l.until>=today&&(!viewGrade()||!l.grade||l.grade==="all"||l.grade===viewGrade())).length; nb.textContent=k; nb.hidden=!k; }
 }
 function openLinkEditor(l){
-  if(!S.teacherOn||S.demo) return; const ed=!!l; l=l||{cat:"apply",grade:"all"};
+  if(!S.teacherOn||S.demo) return; const ed=!!(l&&l.id); l=l||{cat:"apply",grade:"all"};
   openModal(ed?"링크 수정":"링크 올리기",`<form class="form" id="lkF" novalidate>
       <div class="fgroup">분류<div class="seg" id="lkCat">${LINK_CATS.map(c=>`<button type="button" data-v="${c.k}" aria-pressed="${l.cat===c.k}">${c.l}</button>`).join("")}</div></div>
       <label>이름<input class="field" id="lkT" maxlength="40" value="${esc(l.title||"")}" placeholder="예: 2학기 방과후학교 수강 신청"></label>
